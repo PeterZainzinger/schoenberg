@@ -1,0 +1,5 @@
+- JOB: "intercept -g $DEVNODE | ./src/schoenberg_run ./tst/test.yaml | uinput -d $DEVNODE"
+  DEVICE:
+    EVENTS:
+      EV_KEY: [KEY_S]
+

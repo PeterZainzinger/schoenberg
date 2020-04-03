@@ -1,0 +1,45 @@
+layers:
+  - name: right hand
+    prefix: F
+    keys:
+      J: DOWN
+      K: UP
+      H: LEFT
+      L: RIGHT
+      N: LEFTBRACE
+      M: RIGHTBRACE
+      U:
+        key: LEFTBRACE
+        mod: LEFTSHIFT
+      P:
+        key: RIGHTBRACE
+        mod: LEFTSHIFT
+      I:
+        key: 9
+        mod: LEFTSHIFT
+      O:
+        key: 0
+        mod: LEFTSHIFT
+      COMMA: APOSTROPHE
+      DOT:
+        key: APOSTROPHE
+        mod: LEFTSHIFT
+  - name: left hand
+    prefix: N
+    keys:
+      S:
+        key: 4
+        mod: LEFTSHIFT
+      A:
+        key: 3
+        mod: LEFTSHIFT
+      T:
+        # TILDE
+        key: GRAVE
+        mod: LEFTSHIFT
+      V:
+        # PIPE
+        key: BACKSLASH
+        mod: LEFTSHIFT
+
+
