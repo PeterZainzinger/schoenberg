@@ -14,6 +14,9 @@ vector<int> down_keys(SchoenbergState &state) {
     return res;
 }
 
+bool has_down_key(SchoenbergState &state) {
+    return !down_keys(state).empty();
+}
 
 int schoenberg::parse_key(string keyCode) {
     std::stringstream key;
@@ -144,7 +147,7 @@ vector<input_event> schoenberg::process_event(SchoenbergState &state, input_even
 
         update_key_state(state, res);
         return res;
-    } else if (!activeLayer.has_value() && event.value == 1 && state.layers.count(event.code)) {
+    } else if (!has_down_key(state) && !activeLayer.has_value() && event.value == 1 && state.layers.count(event.code)) {
         activate_layer(state, event.code, logs);
         update_key_state(state, res);
         return res;

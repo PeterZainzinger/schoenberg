@@ -156,6 +156,17 @@ TEST(Process, layer_activation) {
     EXPECT_EQ(false, r.first.layers.at(schoenberg::parse_key("F")).active);
 }
 
+TEST(Process, layer_activation_not_if_key_down) {
+
+    TYPE_EVENTS output;
+    auto r = test_run(TYPE_EVENTS({
+                                          {1, "I"},
+                                          {1, "F"},
+                                  }), empty_items, false);
+
+    EXPECT_EQ(false, r.first.layers.at(schoenberg::parse_key("F")).active);
+}
+
 TEST(Process, layer_deactivation) {
     TYPE_EVENTS input;
     input.emplace_back(1, "F");
