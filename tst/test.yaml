@@ -2,6 +2,7 @@ mapping:
   ESC: CAPSLOCK
   CAPSLOCK: ESC
   GRAVE: EQUAL
+  EQUAL: MINUS
 
 layers:
   - name: right hand
