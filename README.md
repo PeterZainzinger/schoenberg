@@ -1,6 +1,6 @@
 # schoenberg
 
-A is a low level input_event mapper for virtual layers 
+Is a low level input_event mapper for virtual layers 
 inspired by ergodox. It's ought  to be used in 
 combination with 
 [interception tools](https://gitlab.com/interception/linux/tools/tree/master).
@@ -30,7 +30,7 @@ layers:
 
 ## Getting Started 
 
-* install [interception tools] and its dependencies and add the 
+* install [interception tools](https://gitlab.com/interception/linux/tools/tree/master) and its dependencies and add the 
 binaries to the path, for example `udevmon`.
 * build an `schoenberg_run` executable with `cmake . && make`.
 In the nix shell started with `nix-shell --pure` this should work out of the box.
