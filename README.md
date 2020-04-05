@@ -10,6 +10,24 @@ combination with
 * map an arbitrary key to another key
 * switch to other layer with different key mapping
 
+
+Example configuration:
+
+```
+mapping:
+  ESC: CAPSLOCK
+  CAPSLOCK: ESC
+
+layers:
+  - name: right hand
+    prefix: F
+    keys:
+      J: DOWN
+      K: UP
+      H: LEFT
+      L: RIGHT
+```
+
 ## Getting Started 
 
 * install [interception tools] and its dependencies and add the 
