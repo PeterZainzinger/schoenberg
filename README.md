@@ -1,13 +1,15 @@
 # schoenberg
 
-**schoenberg** is a low level input_event mapper.
+A is a low level input_event mapper for virtual layers 
+inspired by ergodox layers. It's ought  to be used in 
+combination with 
+[interception tools](https://gitlab.com/interception/linux/tools/tree/master).
 
-# Problems
+## Getting Started 
 
-* switch layer activation to holding prefix 
-* refactor processing :)
+* install [interception tools] and its dependencies and the binaries to the path, 
+for example `udevmon`.
 
-# xset
-xset r rate 220 40 
+* create a `config.yaml`.
 
 

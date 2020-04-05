@@ -4,7 +4,9 @@
 #include "map"
 #include <libevdev/libevdev.h>
 
-vector<int> down_keys(SchoenbergState &state) {
+using namespace schoenberg;
+
+vector<int> down_keys(State &state) {
     vector<int> res;
     for (auto e: state.key_state) {
         if (e.second > 0) {
@@ -14,7 +16,7 @@ vector<int> down_keys(SchoenbergState &state) {
     return res;
 }
 
-bool has_down_key(SchoenbergState &state) {
+bool has_down_key(State &state) {
     return !down_keys(state).empty();
 }
 
@@ -34,51 +36,54 @@ string schoenberg::serialize_key(int code) {
     return NULL;
 }
 
-SchoenbergConfig schoenberg::read_config(const string &file) {
+KeyTarget parse_key_target(YAML::Node node) {
+    if (node.IsScalar()) {
+        auto keyInfo = node.as<string>();
+        return KeyTarget(parse_key(keyInfo), -1);
+    } else {
+        auto keyInfo = node["key"].as<string>();
+
+        auto modKey = -1;
+        if (node["mod"]) {
+            auto modInfo = node["mod"].as<string>();
+            modKey = parse_key(modInfo);
+        }
+        return KeyTarget(parse_key(keyInfo), modKey);
+    }
+}
+
+Config schoenberg::read_config(const string &file) {
     YAML::Node config = YAML::LoadFile(file);
     YAML::Node layers = config["layers"];
-    vector<SchoenbergLayer> outputLayers;
+    vector<LayerConfig> outputLayers;
 
     for (auto layer:layers) {
         YAML::Node keys = layer["keys"];
-        map<int, int> keysCodeOutput;
-        map<int, int> mods;
+        map<int, KeyTarget> keys_output;
 
         for (YAML::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-            auto key = it->first.as<string>();
-
-            if (it->second.IsScalar()) {
-                auto keyInfo = it->second.as<string>();
-                keysCodeOutput[parse_key(key)] = parse_key(keyInfo);
-            } else {
-                auto keyInfo = it->second["key"].as<string>();
-                auto modInfo = it->second["mod"].as<string>();
-                keysCodeOutput[parse_key(key)] = parse_key(keyInfo);
-                mods[parse_key(key)] = parse_key(modInfo);
-            }
+            keys_output[parse_key(it->first.as<string>())] = parse_key_target(it->second);
         }
         outputLayers.emplace_back(
-                layer["name"].as<std::string>(),
                 layer["prefix"].as<std::string>(),
-                keysCodeOutput, mods
+                keys_output
         );
     }
-    return SchoenbergConfig(outputLayers);
+    return Config(outputLayers);
 }
 
-SchoenbergState schoenberg::build_state(const SchoenbergConfig &config) {
-    std::map<int, SchoenbergLayerState> output_layers;
+State schoenberg::build_state(const Config &config) {
+    std::map<int, LayerState> output_layers;
     for (const auto &layer: config.layers) {
         auto key = parse_key(layer.prefix);
-        auto state = SchoenbergLayerState(false, optional<map<int, int>>(), false, false, layer.keysCodes,
-                                          layer.modCodes);
+        auto state = LayerState(false, false, false, layer.keys);
         output_layers.insert({key, state});
     }
-    return SchoenbergState(map<int, int>(), output_layers);
+    return State(map<int, int>(), output_layers);
 }
 
-std::optional<pair<int, SchoenbergLayerState>> find_active_layer(SchoenbergState &state) {
-    std::optional<pair<int, SchoenbergLayerState>> activeLayer;
+std::optional<pair<int, LayerState>> find_active_layer(State &state) {
+    std::optional<pair<int, LayerState>> activeLayer;
     for (auto entry: state.layers) {
         if (entry.second.active) {
             activeLayer = entry;
@@ -107,25 +112,25 @@ void add_event(vector<input_event> &events, input_event event, string message, s
     events.push_back(event);
 }
 
-void activate_layer(SchoenbergState &state, int code, std::ostream &logs) {
+void activate_layer(State &state, int code, std::ostream &logs) {
     logs << "activate_layer " << code << endl;
     state.layers[code].active = true;
     state.layers[code].used = false;
     state.layers[code].written = false;
 }
 
-void deactivate_layer(SchoenbergState &state, int code, std::ostream &logs) {
+void deactivate_layer(State &state, int code, std::ostream &logs) {
     logs << "deactivate_layer " << code << endl;
     state.layers[code].active = false;
 }
 
-void update_key_state(SchoenbergState &state, vector<input_event> events) {
+void update_key_state(State &state, vector<input_event> events) {
     for (auto e: events) {
         state.key_state[e.code] = e.value;
     }
 }
 
-vector<input_event> schoenberg::process_event(SchoenbergState &state, input_event event, std::ostream &logs) {
+vector<input_event> schoenberg::process_for_layer(State &state, input_event event, std::ostream &logs) {
     vector<input_event> res;
 
     auto activeLayer = find_active_layer(state);
@@ -162,15 +167,14 @@ vector<input_event> schoenberg::process_event(SchoenbergState &state, input_even
 
     if (activeLayer.has_value()) {
         // check if key is mapped
-        if (activeLayer.value().second.mapping.count(event.code)) {
-            auto target = activeLayer.value().second.mapping[event.code];
-            auto has_mod = activeLayer.value().second.mod.count(event.code);
-            if (has_mod && event.value == 1) {
-                add_event(res, create_event(activeLayer.value().second.mod[event.code], 1), "add mod before", logs);
+        if (activeLayer.value().second.keys.count(event.code)) {
+            auto target = activeLayer.value().second.keys[event.code];
+            if (target.mod > 0 && event.value == 1) {
+                add_event(res, create_event(target.mod, 1), "add mod before", logs);
             }
-            add_event(res, create_event(target, event.value), "mapped key", logs);
-            if (has_mod && event.value == 0) {
-                add_event(res, create_event(activeLayer.value().second.mod[event.code], 0), "add mod after", logs);
+            add_event(res, create_event(target.key, event.value), "mapped key", logs);
+            if (target.mod > 0 && event.value == 0) {
+                add_event(res, create_event(target.mod, 0), "add mod after", logs);
             }
         } else {
             // if an layer is active but key is not mapped still write it throw

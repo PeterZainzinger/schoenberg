@@ -1,28 +1,11 @@
-#include <iostream>
-#include <fstream>
+#include "utils.h"
 #include "schoenberg.h"
-#include <stdio.h>
 #include <unistd.h>
 #include <linux/input.h>
 
 using namespace std;
+using namespace schoenberg;
 
-class NulStreambuf : public std::streambuf
-{
-    char                dummyBuffer[ 64 ];
-protected:
-    virtual int         overflow( int c )
-    {
-        setp( dummyBuffer, dummyBuffer + sizeof( dummyBuffer ) );
-        return (c == traits_type::eof()) ? '\0' : c;
-    }
-};
-
-class NulOStream : private NulStreambuf, public std::ostream
-{
-public:
-    NulOStream() : std::ostream( this ) {}
-};
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -54,7 +37,7 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        auto res = schoenberg::process_event(state, event, logs);
+        auto res = schoenberg::process_for_layer(state, event, logs);
         for (auto e:res) {
             log_written << "code: " << schoenberg::serialize_key(e.code) << " value: " << e.value << std::endl;
             fwrite(&e, sizeof(e), 1, stdout);

@@ -9,7 +9,6 @@ find_library(YAML_CPP yaml-cpp REQUIRED)
 find_path(LIBEVDEV libevdev-1.0 REQUIRED)
 find_library(LIBEVDEV_LIB libevdev.so REQUIRED)
 
-message( ${LIBEVDEV_LIB} )
 include_directories(${LIBEVDEV}/libevdev-1.0)
 
 add_executable(${BINARY}_run ${SOURCES})
