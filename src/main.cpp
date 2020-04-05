@@ -37,13 +37,16 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        auto res = schoenberg::process_for_layer(state, event, logs);
-        for (auto e:res) {
-            log_written << "code: " << schoenberg::serialize_key(e.code) << " value: " << e.value << std::endl;
-            fwrite(&e, sizeof(e), 1, stdout);
-        }
-
         log_file << "code: " << schoenberg::serialize_key(event.code) << " value: " << event.value << std::endl;
+        auto mapped_keys = schoenberg::process_mapping(config, event, logs);
+
+        for (auto me: mapped_keys) {
+            auto res = schoenberg::process_for_layer(state, me, logs);
+            for (auto e:res) {
+                log_written << "code: " << schoenberg::serialize_key(e.code) << " value: " << e.value << std::endl;
+                fwrite(&e, sizeof(e), 1, stdout);
+            }
+        }
     }
 
 }

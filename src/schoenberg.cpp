@@ -55,7 +55,10 @@ KeyTarget parse_key_target(YAML::Node node) {
 Config schoenberg::read_config(const string &file) {
     YAML::Node config = YAML::LoadFile(file);
     YAML::Node layers = config["layers"];
+    YAML::Node mapping = config["mapping"];
     vector<LayerConfig> outputLayers;
+
+    map<int, KeyTarget> keys;
 
     for (auto layer:layers) {
         YAML::Node keys = layer["keys"];
@@ -69,7 +72,10 @@ Config schoenberg::read_config(const string &file) {
                 keys_output
         );
     }
-    return Config(outputLayers);
+    for (YAML::const_iterator it = mapping.begin(); it != mapping.end(); ++it) {
+        keys[parse_key(it->first.as<string>())] = parse_key_target(it->second);
+    }
+    return Config(outputLayers, keys);
 }
 
 State schoenberg::build_state(const Config &config) {
@@ -195,5 +201,23 @@ vector<input_event> schoenberg::process_for_layer(State &state, input_event even
     update_key_state(state, res);
     return res;
 }
+
+vector<input_event> schoenberg::process_mapping(Config &config, input_event event, std::ostream &logs) {
+    auto res = vector<input_event>();
+    if (config.keys.count(event.code)) {
+        auto target = config.keys[event.code];
+        if (target.mod > 0 && event.value == 1) {
+            add_event(res, create_event(target.mod, 1), "mapping: add mod before", logs);
+        }
+        add_event(res, create_event(target.key, event.value), "mapping: mapped key", logs);
+        if (target.mod > 0 && event.value == 0) {
+            add_event(res, create_event(target.mod, 0), "mapping: add mod after", logs);
+        }
+    } else {
+        res.push_back(event);
+    }
+    return res;
+}
+
 
 

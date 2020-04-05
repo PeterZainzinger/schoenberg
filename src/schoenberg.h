@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <linux/input.h>
 
+
 using namespace std;
 
 namespace schoenberg {
@@ -35,9 +36,11 @@ namespace schoenberg {
 
     class Config {
     public:
-        std::vector<LayerConfig> layers;
 
-        Config(std::vector<LayerConfig> layers) : layers(std::move(layers)) {}
+        std::vector<LayerConfig> layers;
+        std::map<int, KeyTarget> keys;
+
+        Config(const vector<LayerConfig> &layers, const map<int, KeyTarget> &keys) : layers(layers), keys(keys) {}
 
     };
 
@@ -79,6 +82,8 @@ namespace schoenberg {
 
 
     vector<input_event> process_for_layer(State &state, input_event event, std::ostream &logs);
+
+    vector<input_event> process_mapping(Config &config,input_event event, std::ostream &logs);
 
     int parse_key(string keyCode);
 

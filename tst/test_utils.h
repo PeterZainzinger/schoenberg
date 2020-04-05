@@ -17,23 +17,31 @@ vector<string> effective_keystrokes(TYPE_EVENTS event) {
     return res;
 }
 
-State setup_test() {
+pair<Config, State> setup_test() {
     auto config = schoenberg::read_config("test.yaml");
-    return schoenberg::build_state(config);
+    return {config, schoenberg::build_state(config)};
 }
 
 
-TYPE_EVENTS process_layer_events(State &state, TYPE_EVENTS events) {
+TYPE_EVENTS process(Config &config, State &state, TYPE_EVENTS events) {
     TYPE_EVENTS res;
     for (auto eventInput :events) {
-        input_event event = {
+
+        input_event i = {
                 .type = EV_KEY,
-                .code = (__u16) schoenberg::parse_key(eventInput.second),
-                eventInput.first,
+                .code = (__u16) schoenberg::parse_key(
+                        eventInput.second),
+                eventInput.first
         };
-        auto item_res = schoenberg::process_for_layer(state, event, cout);
-        for (auto e:item_res) {
-            res.push_back({e.value, schoenberg::serialize_key(e.code)});
+
+        vector<input_event> imm = schoenberg::process_mapping(config, i, cout);
+
+        for (auto event: imm) {
+            auto item_res = schoenberg::process_for_layer(state, event, cout);
+            for (auto e:item_res) {
+                //auto entry = pair<__u16, string>{e.value,e.value};
+                res.push_back({(__u16) e.value, schoenberg::serialize_key(e.code)});
+            }
         }
     }
     return res;
@@ -70,14 +78,14 @@ void events_equals(TYPE_EVENTS expected, TYPE_EVENTS actual) {
     }
 }
 
-pair<State, TYPE_EVENTS> test_run_layer(TYPE_EVENTS input, TYPE_EVENTS output, bool assert = true) {
-    auto state = setup_test();
-    auto res = process_layer_events(state, input);
+pair<State, TYPE_EVENTS> test_run(TYPE_EVENTS input, TYPE_EVENTS output, bool assert = true) {
+    auto setup = setup_test();
+    auto res = process(setup.first, setup.second, input);
     if (assert) {
         events_equals(output, res);
     }
-    return {state, res};
-};
+    return {setup.second, res};
+}
 
 void assert_strokes(vector<string> expected, vector<string> actual) {
     EXPECT_EQ(expected.size(), actual.size());
@@ -109,3 +117,4 @@ void no_stroke_left_behind(TYPE_EVENTS events) {
         }
     }
 }
+
