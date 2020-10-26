@@ -1,3 +1,4 @@
+.direnv
 result
 src/*_run
 tst/*_tst
