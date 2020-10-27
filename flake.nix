@@ -10,9 +10,11 @@
           system = system;
         });
         commonPkgs = with pkgs; [
-          pkgs.gtest
-          pkgs.libyamlcpp
-          pkgs.libevdev
+          gtest
+          libyamlcpp
+          libevdev
+          nlohmann_json
+          interception-tools
         ];
       in
       {
@@ -37,6 +39,43 @@
             ]) ++ commonPkgs;
             shellHook = ''
             '';
+          };
+
+        nixosModule = { config, pkgs, lib, ... }:
+          with lib;
+          let
+            cfg = config.services.schoenberg; in
+          {
+            options.services.schoenberg = {
+              enable = mkEnableOption "schoenberg";
+            };
+            config = mkIf cfg.enable {
+              environment.systemPackages = with pkgs; [
+                interception-tools
+                defaultPackage
+              ];
+              environment.etc."schoenberg_config.yaml" = ''
+                mapping:
+                  ESC: CAPSLOCK
+                  CAPSLOCK: ESC
+                layers:
+                  - name: right hand
+                    prefix: F
+                    keys:
+                      J: DOWN
+                      K: UP
+                      H: LEFT
+                      L: RIGHT
+              '';
+              environment.etc."schoenberg_udev.yaml" = ''
+                - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${defaultPackage}/bin/schoenberg_run /etc/schoenberg_config.yaml | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
+                  DEVICE:
+                    EVENTS:
+                      EV_KEY: [KEY_S]
+
+              '';
+
+            };
           };
       });
 }
