@@ -8,7 +8,8 @@
       nixosModule = { config, pkgs, lib, ... }:
         with lib;
         let
-          cfg = config.services.schoenberg; in
+          cfg = config.services.schoenberg;
+        in
         {
           options.services.schoenberg = {
             enable = mkEnableOption "schoenberg";
@@ -16,34 +17,42 @@
           config = mkIf cfg.enable {
             environment.systemPackages = with pkgs; [
               interception-tools
-              self.defaultPackage
+              self.defaultPackage.aarch64-linux
             ];
-            environment.etc."schoenberg_config.yaml" = ''
-              mapping:
-                ESC: CAPSLOCK
-                CAPSLOCK: ESC
-              layers:
-                - name: right hand
-                  prefix: F
-                  keys:
-                    J: DOWN
-                    K: UP
-                    H: LEFT
-                    L: RIGHT
-            '';
-            environment.etc."schoenberg_udev.yaml" = ''
-              - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${self.defaultPackage}/bin/schoenberg_run /etc/schoenberg_config.yaml | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
-                DEVICE:
-                  EVENTS:
-                    EV_KEY: [KEY_S]
-
-            '';
+            environment.etc."schoenberg_config.yaml" =
+              {
+                mode = "004";
+                text =
+                  ''
+                    mapping:
+                      ESC: CAPSLOCK
+                      CAPSLOCK: ESC
+                    layers:
+                      - name: right hand
+                        prefix: F
+                        keys:
+                          J: DOWN
+                          K: UP
+                          H: LEFT
+                          L: RIGHT
+                  '';
+              };
+            environment.etc."schoenberg_udev.yaml" =
+              {
+                mode = "004";
+                text =
+                  ''
+                    - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${self.defaultPackage.aarch64-linux}/bin/schoenberg_run /etc/schoenberg_config.yaml | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
+                      DEVICE:
+                        EVENTS:
+                          EV_KEY: [KEY_S]
+                  '';
+              };
 
           };
         };
 
-    }
-    //
+    } //
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = (import nixpkgs {
@@ -58,6 +67,7 @@
         ];
       in
       {
+
         defaultPackage = pkgs.stdenv.mkDerivation {
           name = "schoenberg";
           src = ./.;
