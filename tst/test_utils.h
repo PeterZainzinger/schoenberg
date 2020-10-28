@@ -18,7 +18,7 @@ vector<string> effective_keystrokes(TYPE_EVENTS event) {
 }
 
 pair<Config, State> setup_test() {
-    auto config = schoenberg::read_config("test.yaml");
+    auto config = schoenberg::read_config("tst/test.yaml");
     return {config, schoenberg::build_state(config)};
 }
 

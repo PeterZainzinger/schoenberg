@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 TEST(Config, loadConfig) {
-    auto config = schoenberg::read_config("test.yaml");
+    auto config = schoenberg::read_config("./tst/test.json");
     EXPECT_EQ(2, config.layers.size());
     auto vimLayer = config.layers[0];
 

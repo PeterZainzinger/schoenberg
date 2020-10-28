@@ -13,39 +13,51 @@
         {
           options.services.schoenberg = {
             enable = mkEnableOption "schoenberg";
+            config = mkOption rec {
+              type = types.attrs;
+              apply = recursiveUpdate default;
+              default = {
+                mapping = { };
+                layers = [ ];
+              };
+            };
           };
           config = mkIf cfg.enable {
             environment.systemPackages = with pkgs; [
               interception-tools
               self.defaultPackage.aarch64-linux
             ];
-            environment.etc."schoenberg_config.yaml" =
+            systemd.services."schoenberg" = {
+              enable = true;
+              description = "Keyboard Mapping";
+
+              path = [
+                pkgs.interception-tools
+                self.defaultPackage.aarch64-linux
+                pkgs.bash
+              ];
+              serviceConfig = {
+                ExecStart = "${pkgs.interception-tools}/bin/udevmon -c /etc/schoenberg_udev.yaml";
+              };
+
+              wants = [ "systemd-udev-settle.service" ];
+              after = [ "systemd-udev-settle.service" ];
+              wantedBy = [ "multi-user.target" ];
+            };
+            environment.etc."schoenberg_config.json" =
               {
                 mode = "004";
-                text =
-                  ''
-                    mapping:
-                      ESC: CAPSLOCK
-                      CAPSLOCK: ESC
-                    layers:
-                      - name: right hand
-                        prefix: F
-                        keys:
-                          J: DOWN
-                          K: UP
-                          H: LEFT
-                          L: RIGHT
-                  '';
+                text = builtins.toJSON cfg.config;
               };
             environment.etc."schoenberg_udev.yaml" =
               {
                 mode = "004";
                 text =
                   ''
-                    - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${self.defaultPackage.aarch64-linux}/bin/schoenberg_run /etc/schoenberg_config.yaml | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
+                    - JOB: "${pkgs.interception-tools}/bin/intercept -g $DEVNODE | ${self.defaultPackage.aarch64-linux}/bin/schoenberg_run /etc/schoenberg_config.json | ${pkgs.interception-tools}/bin/uinput -d $DEVNODE"
                       DEVICE:
                         EVENTS:
-                          EV_KEY: [KEY_S]
+                          EV_KEY: [KEY_F]
                   '';
               };
 
@@ -83,9 +95,10 @@
         devShell =
           pkgs.mkShell {
             buildInputs = (with pkgs; [
-              pkgs.which
-              pkgs.cmake
-              pkgs.gcc
+              which
+              cmake
+              gcc
+              jetbrains.clion
             ]) ++ commonPkgs;
             shellHook = ''
             '';
